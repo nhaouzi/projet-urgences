@@ -138,21 +138,117 @@ DT[,mois:=month(TS.adm)]
 DT[,annee := year(TS.adm)]
 DT[,jour_mois := day(TS.adm)]
 DT[,heure_adm := hour(TS.adm)]
-
-# probleme de NA à corriger
-
-# table(DT[is.na(D.total), annee])
-# sum(is.na(APR2013$Date.et.heure.entrŽe))
-# sum(is.na(APR2013$Timestamp.1er.mŽdecin))
-# sum(is.na(APR2013$Tri.IAO))
-# sum(is.na(APR2013$TimeStamp.IAO))
-# sum(is.na(APR2013$TimeStamp.Fin.de.prise.en.charge.SAU))
-# sum(is.na(APR2013$TimeStamp.DATE.DE.SORTIE..SAU....UHCD.))
+DT[,min_adm := minute(TS.adm)]
 
 DT[,TS.med := TS.adm + minutes(D.total)]
 
-DT[,nb_pers_attente := sapply(DT$TS.adm, function(x) compte_file_attente(TS_adm = DT$TS.adm, 
-                                                                         TS_med = DT$TS.med,
-                                                                         evt = x))]
+
+# nb_pers_attente = sapply(DT$TS.adm, function(x) compte_file_attente(TS_adm = DT$TS.adm, 
+#                                                                     TS_med = DT$TS.med,
+#                                                                     evt = x))
+# DT[,nb_pers_attente := nb_pers_attente]
+# DT[,c("TS.adm", "TS.med")] = DT[,lapply(.SD, as.character), .SDcols= c("TS.adm", "TS.med")]
+
+DT = DT[D.total >=0 & D.total <=600,]
+DT = DT[tri.iao != 0]
+
+attente = sapply(DT$TS.adm, function(x) 
+  compte_file_attente_par_iao(TS_adm = DT$TS.adm, 
+                              TS_med = DT$TS.med,
+                              evt = x, 
+                              tri_iao = DT$tri.iao))
+
+attente_iao1 = apply(attente, 2, function(x) x$attente_iao1)
+attente_iao2 = apply(attente, 2, function(x) x$attente_iao2)
+attente_iao3 = apply(attente, 2, function(x) x$attente_iao3)
+attente_tot = apply(attente, 2, function(x) x$nb_attente)
+
+
 fwrite(DT, "Bases/base_tot_finale.csv",
-       quote = F, row.names = F, append = F, sep=";")
+       quote = F, row.names = F, append = F, sep=";", 
+       dateTimeAs = "write.csv")
+
+
+#--------------------------------------------------------
+# construction base avec simulations
+
+library(data.table)
+library(lubridate)
+
+setwd("Desktop/ENSAE_3A/S2/Projet info/Git/projet-urgences/")
+
+DT = fread("Bases/base_tot_finale.csv")
+
+DT[,hopital := rep("hopital1", nrow(DT))]
+
+prob_joursemaine = as.numeric(round(table(DT$jour_semaine)/nrow(DT),3))
+prob_iao = as.numeric(round(table(DT$tri.iao)/nrow(DT),3))
+prob_mois = as.numeric(round(table(DT$mois)/nrow(DT),3))
+prob_annee = as.numeric(round(table(DT$annee)/nrow(DT),3))
+prob_jourmois = as.numeric(round(table(DT$jour_mois)/nrow(DT),3))
+prob_heure = as.numeric(round(table(DT$heure_adm)/nrow(DT),3))
+prob_minute = as.numeric(round(table(DT$min_adm)/nrow(DT), 3))
+
+nb_hopital2 = 60000
+jours = c("Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche")
+hopital2 = data.table(tri.iao = sample(1:3, size=nb_hopital2, replace = T, 
+                                       prob = prob_iao),
+                      D.total = round(rexp(nb_hopital2, 1/mean(DT$D.total)),0),
+                      jour_semaine = sample(jours, size = nb_hopital2, 
+                                            replace = T, prob = prob_joursemaine),
+                      mois = sample(1:12, size=nb_hopital2, replace = T,
+                                    prob = prob_mois),
+                      annee = sample(2013:2014, size=nb_hopital2, replace = T,
+                                     prob = prob_annee),
+                      jour_mois = sample(1:31, size=nb_hopital2, replace = T,
+                                         prob=prob_jourmois),
+                      heure_adm = sample(0:23, size=nb_hopital2, replace = T,
+                                         prob_heure),
+                      min_adm = sample(0:59, size=nb_hopital2, replace = T,
+                                       prob = prob_minute))
+
+hopital2 = as.data.frame(hopital2)
+for(j in c(4,6,7,8)) {
+  hopital2[,j] = as.character(hopital2[,j])
+  for(i in 1:nrow(hopital2)) {
+    if(nchar(hopital2[i,j])<2) hopital2[i,j] = paste0("0", hopital2[i,j]) 
+  }
+  print(j)
+}
+hopital2 = as.data.table(hopital2)
+
+hopital2[,adm := paste0(hopital2$annee, "-", hopital2$mois, "-", hopital2$jour_mois, " ",
+           hopital2$heure_adm, ":", hopital2$min_adm, ":00")]
+
+hopital2[,TS.adm := strptime(adm, format = "%Y-%m-%d %H:%M:%S", tz = "Europe/Paris")]
+hopital2[,TS.med := TS.adm + minutes(D.total)]
+hopital2 = na.omit(hopital2, cols = c("TS.adm", "TS.med"))
+hopital2 = hopital2[order(hopital2$TS.adm, decreasing = F)]
+hopital2[,adm:=NULL]
+
+# hist(DT$D.total, freq = F, col="lightblue", breaks = 100, main="Temps attente total", 
+#      xlab = "" )
+# lines(density(rexp(n = nrow(DT), rate = 1/mean(DT$D.total))), col="red")
+
+attente = sapply(hopital2$TS.adm, function(x) 
+  compte_file_attente_par_iao(TS_adm = hopital2$TS.adm, 
+                                                 TS_med = hopital2$TS.med,
+                                                 evt = x, tri_iao = hopital2$tri.iao))
+
+attente_iao1 = apply(attente, 2, function(x) x$attente_iao1)
+attente_iao2 = apply(attente, 2, function(x) x$attente_iao2)
+attente_iao3 = apply(attente, 2, function(x) x$attente_iao3)
+attente_tot = apply(attente, 2, function(x) x$nb_attente)
+
+hopital2[,nb_pers_attente := attente_tot]
+hopital2[,attente_iao1 := attente_iao1]
+hopital2[,attente_iao2 := attente_iao2]
+hopital2[,attente_iao3 := attente_iao3]
+
+hopital2[,hopital := "hopital2"]
+
+fwrite(hopital2, file = "Bases/hopital2.csv",
+       append = F, quote = F, row.names = F,
+       sep=";", dateTimeAs = "write.csv")
+
+
