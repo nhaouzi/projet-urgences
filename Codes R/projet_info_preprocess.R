@@ -163,6 +163,10 @@ attente_iao2 = apply(attente, 2, function(x) x$attente_iao2)
 attente_iao3 = apply(attente, 2, function(x) x$attente_iao3)
 attente_tot = apply(attente, 2, function(x) x$nb_attente)
 
+DT[,nb_pers_attente := attente_tot]
+DT[,attente_iao1 := attente_iao1]
+DT[,attente_iao2 := attente_iao2]
+DT[,attente_iao3 := attente_iao3]
 
 fwrite(DT, "Bases/base_tot_finale.csv",
        quote = F, row.names = F, append = F, sep=";", 
