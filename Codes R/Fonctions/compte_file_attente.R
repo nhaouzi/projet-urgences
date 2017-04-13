@@ -64,5 +64,12 @@ moyenne_file_attente_par_iao = function(TS_adm, TS_med,  evt, tri_iao, fenetre_n
 # moyenne_file_attente_par_iao(DT$TS.adm, DT$TS.med,  DT$TS.adm[80], DT$tri.iao, 4)
 
 
-# tmp_iao = tmp[as.numeric(TS.iao) > as.numeric(evt)]
-# tmp_med = tmp[as.numeric(TS.med) > as.numeric(evt)]
+trouve_jour_fete = function(mois_fete, jour_fete, mois, jour) {
+  tab = data.table(mois = as.integer(mois),
+                   jour = as.integer(jour),
+                   date_char = paste0(jour,mois))
+  date_a_comparer = paste0(jour_fete,mois_fete)
+  tab[,jour_fete := ifelse(test = date_char %in% date_a_comparer, yes = 1, no = 0)]
+  return(tab$jour_fete)
+}
+
