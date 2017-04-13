@@ -168,9 +168,28 @@ DT[,attente_iao1 := attente_iao1]
 DT[,attente_iao2 := attente_iao2]
 DT[,attente_iao3 := attente_iao3]
 
+moyenne = sapply(DT$TS.adm, function(x) moyenne_file_moyenne_par_iao(DT$TS.adm, 
+                                       DT$TS.med,  
+                                       x, 
+                                       DT$tri.iao, 4))
+
+moyenne_iao1 = apply(moyenne, 2, function(x) x$attente_iao1)
+moyenne_iao2 = apply(moyenne, 2, function(x) x$attente_iao2)
+moyenne_iao3 = apply(moyenne, 2, function(x) x$attente_iao3)
+moyenne_tot = apply(moyenne, 2, function(x) x$nb_attente)
+
+DT[,attente_moyenne := moyenne_tot]
+DT[,moyenne_iao1 := moyenne_iao1]
+DT[,moyenne_iao2 := moyenne_iao2]
+DT[,moyenne_iao3 := moyenne_iao3]
+
+for (col in c("moyenne_iao1", "moyenne_iao2", "moyenne_iao3", "attente_moyenne")) {
+  DT[is.na(get(col)), (col) := -999]
+}
+
 fwrite(DT, "Bases/base_tot_finale.csv",
-       quote = F, row.names = F, append = F, sep=";", 
-       dateTimeAs = "write.csv")
+   quote = F, row.names = F, append = F, sep=";", 
+   dateTimeAs = "write.csv")
 
 
 #--------------------------------------------------------

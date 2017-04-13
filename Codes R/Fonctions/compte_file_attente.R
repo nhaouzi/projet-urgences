@@ -34,5 +34,35 @@ compte_file_attente_par_iao = function(TS_adm, TS_med,  evt, tri_iao) {
 }
 
 
+moyenne_file_attente_par_iao = function(TS_adm, TS_med,  evt, tri_iao, fenetre_nb_heure) {
+  # trier la base par date de ts.adm peut etre plus rapide
+  tab = data.table(adm = TS_adm,
+                   med = TS_med, 
+                   iao = tri_iao, tps_attente = difftime(TS_med, TS_adm, units = "mins"))
+  #tmps_date_adm = difftime(evt, tab$adm, units = "min") 
+  tmps_med_date = difftime(tab$med, evt, units = "hours")
+  fenetre = tab[tmps_med_date > -fenetre_nb_heure & tmps_med_date < 0]
+  #print(fenetre)
+  if(nrow(fenetre)!=0) {
+    attente_iao1 = mean(fenetre[iao ==1]$tps_attente)
+    attente_iao2 = mean(fenetre[iao ==2]$tps_attente)
+    attente_iao3 = mean(fenetre[iao ==3]$tps_attente)
+    
+  }
+  else {
+    attente_iao1 <- NA
+    attente_iao2 <- NA
+    attente_iao3 <- NA
+  }
+  return(list(nb_attente = mean(fenetre$tps_attente),
+              attente_iao1 = attente_iao1,
+              attente_iao2 = attente_iao2,
+              attente_iao3 = attente_iao3))
+}
+
+## exemple
+# moyenne_file_attente_par_iao(DT$TS.adm, DT$TS.med,  DT$TS.adm[80], DT$tri.iao, 4)
+
+
 # tmp_iao = tmp[as.numeric(TS.iao) > as.numeric(evt)]
 # tmp_med = tmp[as.numeric(TS.med) > as.numeric(evt)]
