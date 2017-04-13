@@ -187,6 +187,15 @@ for (col in c("moyenne_iao1", "moyenne_iao2", "moyenne_iao3", "attente_moyenne")
   DT[is.na(get(col)), (col) := -999]
 }
 
+jour_fete = c(24, 25, 14, 31, 1)
+mois_fete = c(12, 12, 7, 12, 1)
+
+DT[,jour_fetes := trouve_jour_fete(jour_fete, mois_fete, 
+                                         mois = DT$mois, 
+                                         jour = DT$jour_mois)]
+
+
+
 fwrite(DT, "Bases/base_tot_finale.csv",
    quote = F, row.names = F, append = F, sep=";", 
    dateTimeAs = "write.csv")
@@ -212,66 +221,105 @@ prob_jourmois = as.numeric(round(table(DT$jour_mois)/nrow(DT),3))
 prob_heure = as.numeric(round(table(DT$heure_adm)/nrow(DT),3))
 prob_minute = as.numeric(round(table(DT$min_adm)/nrow(DT), 3))
 
-nb_hopital2 = 60000
-jours = c("Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche")
-hopital2 = data.table(tri.iao = sample(1:3, size=nb_hopital2, replace = T, 
+moyenne_hopital3 = 150
+nb_hopital3 = 20000
+jours = c("Dimanche", "Jeudi", "Lundi", "Mardi", "Mercredi", "Samedi", "Vendredi")
+hopital3 = data.table(tri.iao = sample(1:3, size=nb_hopital3, replace = T, 
                                        prob = prob_iao),
-                      D.total = round(rexp(nb_hopital2, 1/mean(DT$D.total)),0),
-                      jour_semaine = sample(jours, size = nb_hopital2, 
+                      D.total = round(rexp(nb_hopital3, 1/moyenne_hopital3),0),
+                      jour_semaine = sample(jours, size = nb_hopital3, 
                                             replace = T, prob = prob_joursemaine),
-                      mois = sample(1:12, size=nb_hopital2, replace = T,
+                      mois = sample(1:12, size=nb_hopital3, replace = T,
                                     prob = prob_mois),
-                      annee = sample(2013:2014, size=nb_hopital2, replace = T,
+                      annee = sample(2013:2014, size=nb_hopital3, replace = T,
                                      prob = prob_annee),
-                      jour_mois = sample(1:31, size=nb_hopital2, replace = T,
+                      jour_mois = sample(1:31, size=nb_hopital3, replace = T,
                                          prob=prob_jourmois),
-                      heure_adm = sample(0:23, size=nb_hopital2, replace = T,
+                      heure_adm = sample(0:23, size=nb_hopital3, replace = T,
                                          prob_heure),
-                      min_adm = sample(0:59, size=nb_hopital2, replace = T,
+                      min_adm = sample(0:59, size=nb_hopital3, replace = T,
                                        prob = prob_minute))
 
-hopital2 = as.data.frame(hopital2)
+hopital3 = as.data.frame(hopital3)
 for(j in c(4,6,7,8)) {
-  hopital2[,j] = as.character(hopital2[,j])
-  for(i in 1:nrow(hopital2)) {
-    if(nchar(hopital2[i,j])<2) hopital2[i,j] = paste0("0", hopital2[i,j]) 
+  hopital3[,j] = as.character(hopital3[,j])
+  for(i in 1:nrow(hopital3)) {
+    if(nchar(hopital3[i,j])<2) hopital3[i,j] = paste0("0", hopital3[i,j]) 
   }
   print(j)
 }
-hopital2 = as.data.table(hopital2)
+hopital3 = as.data.table(hopital3)
 
-hopital2[,adm := paste0(hopital2$annee, "-", hopital2$mois, "-", hopital2$jour_mois, " ",
-           hopital2$heure_adm, ":", hopital2$min_adm, ":00")]
+hopital3[,adm := paste0(hopital3$annee, "-", hopital3$mois, "-", hopital3$jour_mois, " ",
+           hopital3$heure_adm, ":", hopital3$min_adm, ":00")]
 
-hopital2[,TS.adm := strptime(adm, format = "%Y-%m-%d %H:%M:%S", tz = "Europe/Paris")]
-hopital2[,TS.med := TS.adm + minutes(D.total)]
-hopital2 = na.omit(hopital2, cols = c("TS.adm", "TS.med"))
-hopital2 = hopital2[order(hopital2$TS.adm, decreasing = F)]
-hopital2[,adm:=NULL]
+hopital3[,TS.adm := strptime(adm, format = "%Y-%m-%d %H:%M:%S", tz = "Europe/Paris")]
+hopital3[,TS.med := TS.adm + minutes(D.total)]
+hopital3 = na.omit(hopital3, cols = c("TS.adm", "TS.med"))
+hopital3 = hopital3[order(hopital3$TS.adm, decreasing = F)]
+hopital3[,adm:=NULL]
 
 # hist(DT$D.total, freq = F, col="lightblue", breaks = 100, main="Temps attente total", 
 #      xlab = "" )
 # lines(density(rexp(n = nrow(DT), rate = 1/mean(DT$D.total))), col="red")
 
-attente = sapply(hopital2$TS.adm, function(x) 
-  compte_file_attente_par_iao(TS_adm = hopital2$TS.adm, 
-                                                 TS_med = hopital2$TS.med,
-                                                 evt = x, tri_iao = hopital2$tri.iao))
+attente = sapply(hopital3$TS.adm, function(x) 
+  compte_file_attente_par_iao(TS_adm = hopital3$TS.adm, 
+                                                 TS_med = hopital3$TS.med,
+                                                 evt = x, tri_iao = hopital3$tri.iao))
 
 attente_iao1 = apply(attente, 2, function(x) x$attente_iao1)
 attente_iao2 = apply(attente, 2, function(x) x$attente_iao2)
 attente_iao3 = apply(attente, 2, function(x) x$attente_iao3)
 attente_tot = apply(attente, 2, function(x) x$nb_attente)
 
-hopital2[,nb_pers_attente := attente_tot]
-hopital2[,attente_iao1 := attente_iao1]
-hopital2[,attente_iao2 := attente_iao2]
-hopital2[,attente_iao3 := attente_iao3]
+hopital3[,nb_pers_attente := attente_tot]
+hopital3[,attente_iao1 := attente_iao1]
+hopital3[,attente_iao2 := attente_iao2]
+hopital3[,attente_iao3 := attente_iao3]
 
-hopital2[,hopital := "hopital2"]
+hopital3[,hopital := "hopital3"]
 
-fwrite(hopital2, file = "Bases/hopital2.csv",
+moyenne = sapply(hopital3$TS.adm, function(x) 
+  moyenne_file_attente_par_iao(hopital3$TS.adm, hopital3$TS.med,  
+                                                x, 
+                                                hopital3$tri.iao, 4))
+
+moyenne_iao1 = apply(moyenne, 2, function(x) x$attente_iao1)
+moyenne_iao2 = apply(moyenne, 2, function(x) x$attente_iao2)
+moyenne_iao3 = apply(moyenne, 2, function(x) x$attente_iao3)
+moyenne_tot = apply(moyenne, 2, function(x) x$nb_attente)
+
+hopital3[,attente_moyenne := moyenne_tot]
+hopital3[,moyenne_iao1 := moyenne_iao1]
+hopital3[,moyenne_iao2 := moyenne_iao2]
+hopital3[,moyenne_iao3 := moyenne_iao3]
+
+for (col in c("moyenne_iao1", "moyenne_iao2", "moyenne_iao3", "attente_moyenne")) {
+  hopital3[is.na(get(col)), (col) := -999]
+}
+
+jour_fete = c(24, 25, 14, 31, 1)
+mois_fete = c(12, 12, 7, 12, 1)
+
+hopital3[,jour_fetes := trouve_jour_fete(jour_fete, mois_fete, 
+                                         mois = hopital3$mois, 
+                                         jour = hopital3$jour_mois)]
+
+
+fwrite(hopital3, file = "Bases/hopital3.csv",
        append = F, quote = F, row.names = F,
        sep=";", dateTimeAs = "write.csv")
 
+
+hopital2 = fread("Bases/hopital2.csv")
+jour_fete = c(24, 25, 14, 31, 1)
+mois_fete = c(12, 12, 7, 12, 1)
+
+hopital2[,jour_fetes := trouve_jour_fete(jour_fete, mois_fete, 
+                                         mois = hopital2$mois, 
+                                         jour = hopital2$jour_mois)]
+fwrite(hopital2, file = "Bases/hopital2.csv",
+       append = F, quote = F, row.names = F,
+       sep=";", dateTimeAs = "write.csv")
 
