@@ -484,6 +484,9 @@ fwrite(hopital_tot, file = "Bases/attente_hopitaux_2013_2014_2017.csv",
 # -----------------------------------------------
 # ajout moyenne attente pour 2h et 1h precedente
 
+library(data.table)
+library(lubridate)
+
 hopital_tot = fread("Bases/attente_hopitaux_2013_2014_2017.csv")
 table(hopital_tot$id_hopital)
 hopital1 = hopital_tot[id_hopital == "750100042"]
@@ -492,23 +495,79 @@ hopital3 = hopital_tot[id_hopital == "750100208"]
 hopital4 = hopital_tot[id_hopital == "750100232"]
 hopital5 = hopital_tot[id_hopital == "920100013"]
 
-nb_heure = 1
+hopital1 = hopital1[order(hopital1$TS_adm, decreasing = F)]
+hopital2 = hopital2[order(hopital2$TS_adm, decreasing = F)]
+hopital3 = hopital3[order(hopital3$TS_adm, decreasing = F)]
+hopital4 = hopital4[order(hopital4$TS_adm, decreasing = F)]
+hopital5 = hopital5[order(hopital5$TS_adm, decreasing = F)]
 
-moyenne_1h = retourne_moyenne_attente(hopital1, nb_heure)
 
-hopital1[,attente_moyenne_2h := moyenne_2h$moyenne_tot]
-hopital1[,moyenne_iao1_2h := moyenne_2h$moyenne_iao1]
-hopital1[,moyenne_iao2_2h := moyenne_2h$moyenne_iao2]
-hopital1[,moyenne_iao3_2h := moyenne_2h$moyenne_iao3]
+# test = hopital1[1:2000]
+# moy = moyenne_file_attente_par_iao(TS_adm = test$TS_adm, TS_med = test$TS_med,
+#                              tri_iao = test$tri_iao,
+#                              nb_heure = 4)
+# 
+# tab = tab = data.table(adm = test$TS_adm[1:2000],
+#                        med = test$TS_med[1:2000], 
+#                        iao = test$tri_iao[1:2000], 
+#                        tps_attente = difftime(test$TS_med[1:2000], 
+#                                               test$TS_adm[1:2000], 
+#                                               units = "mins"))
+# 
+# calcule_moyenne_evt(evt = test$TS_adm[1500], tab)
 
-cols = paste0(c("moyenne_iao1_", "moyenne_iao2_", "moyenne_iao3_", "attente_moyenne_"),
+sum(is.na(hopital5$TS_adm))
+sum(is.na(hopital5$TS_med))
+
+
+nb_heure = 2
+moy = moyenne_file_attente_par_iao(TS_adm = hopital5$TS_adm, 
+                                   TS_med = hopital5$TS_med,
+                                   tri_iao = hopital5$tri_iao,
+                                   nb_heure = nb_heure)
+
+
+hopital5[,attente_moyenne_2h := moy$attente_tot]
+hopital5[,moyenne_iao1_2h := moy$attente_iao1]
+hopital5[,moyenne_iao2_2h := moy$attente_iao2]
+hopital5[,moyenne_iao3_2h := moy$attente_iao3]
+
+cols = paste0(c("moyenne_iao1_", "moyenne_iao2_", "moyenne_iao3_", 
+                "attente_moyenne_"),
               nb_heure, "h")
 
 for (col in cols) {
-  hopital1[is.na(get(col)), (col) := -999]
+  hopital5[is.na(get(col)), (col) := -999]
 }
 
-fwrite(hopital1, file = "Bases/hopital1_2017.csv",
+hopital1[,TS_adm:=gsub("/","-",TS_adm)]
+hopital1[,TS_med:=gsub("/","-",TS_med)]
+hopital1[,TS_adm:=paste0(TS_adm,":00")]
+hopital1[,TS_med:=paste0(TS_med,":00")]
+
+ordre = c(names(hopital1)[1:17], "moyenne_iao1_4h",
+          "moyenne_iao2_4h", "moyenne_iao3_4h", "attente_moyenne_2h",  
+          "moyenne_iao1_2h", "moyenne_iao2_2h", "moyenne_iao3_2h",
+          "nom_hopital")
+hopital1 = setcolorder(hopital1, ordre)
+hopital2 = setcolorder(hopital2, ordre)
+hopital3 = setcolorder(hopital3, ordre)
+hopital4 = setcolorder(hopital4, ordre)
+hopital5 = setcolorder(hopital5, ordre)
+hopital_tot = rbind(hopital1, hopital2, hopital3, hopital4, hopital5)
+
+cols = c(paste0(c("moyenne_iao1_", "moyenne_iao2_", "moyenne_iao3_", 
+                "attente_moyenne_"), 2, "h"), 
+         paste0(c("moyenne_iao1_", "moyenne_iao2_", "moyenne_iao3_", 
+                                "attente_moyenne_"), 4, "h"))
+
+for (col in cols) {
+  hopital_tot[is.na(get(col)), (col) := -999]
+}
+
+
+
+fwrite(hopital_tot, file = "Bases/base_5hopitaux.csv",
        append = F, quote = F, row.names = F,
        sep=";", dateTimeAs = "write.csv")
 
