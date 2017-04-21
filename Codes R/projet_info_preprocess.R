@@ -572,7 +572,9 @@ fwrite(hopital_tot, file = "Bases/base_5hopitaux.csv",
        sep=";", dateTimeAs = "write.csv")
 
 
-
+############# Stats Desc 
+library(data.table)
+tab = fread("Bases/base_5hopitaux.csv")
 
 
 
