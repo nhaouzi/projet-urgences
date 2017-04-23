@@ -200,9 +200,6 @@ fwrite(DT, "Bases/base_tot_finale.csv",
    quote = F, row.names = F, append = F, sep=";", 
    dateTimeAs = "write.csv")
 
-# hist(DT$D.total, freq = F, col="lightblue", breaks = 100, main="Temps attente total", 
-#      xlab = "" )
-# lines(density(rexp(n = nrow(DT), rate = 1/mean(DT$D.total))), col="red")
 
 
 #--------------------------------------------------------
@@ -575,7 +572,14 @@ fwrite(hopital_tot, file = "Bases/base_5hopitaux.csv",
 ############# Stats Desc 
 library(data.table)
 tab = fread("Bases/base_5hopitaux.csv")
+tab2017 = tab[annee_adm == 2017]
+tab2013_2014 = tab[annee_adm == 2013 | annee_adm == 2014]
 
+fwrite(tab2013_2014, "Bases/tab2013_2014.csv")
+fwrite(tab2017, "Bases/tab2017.csv")
+
+tab2017[nchar(TS_adm)==22, TS_adm := substr(TS_adm, 1, 19)]
+tab2017[nchar(TS_med)==22, TS_med := substr(TS_med, 1, 19)]
 
 
 
