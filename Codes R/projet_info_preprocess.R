@@ -1,123 +1,3 @@
-APR2013 <- read.csv2('C:/Users/Augustin/Desktop/R/APR_2013n.csv', fileEncoding="CP1252")
-APR2013 <- read.csv2('APR_2013n.csv', fileEncoding="CP1252")
-
-head(APR2013)
-apr <- APR2013[,-1]
-apr <- apr[,-6]
-apr <- apr[,-5]
-levels(apr$Tri.IAO)[5] <- "0"
-levels(apr$Tri.IAO)[3] <- "3"
-levels(apr$Tri.IAO)[2] <- "2"
-levels(apr$Tri.IAO)[1] <- "1"
-summary(apr$Tri.IAO)
-names(apr)[1] <- "TS.adm"
-names(apr)[2] <- "TS.med"
-names(apr)[4] <- "TS.iao"
-names(apr)[3] <- "tri.iao"
-apr<-apr[,c(1,4,2,3)]
-
-
-apr$TS.adm <- strptime(apr$TS.adm, format = "%d/%m/%Y %H:%M", tz = "Europe/Paris")
-apr$TS.med <- strptime(apr$TS.med, format = "%d/%m/%Y %H:%M", tz = "Europe/Paris")
-apr$TS.iao <- strptime(apr$TS.iao, format = "%d/%m/%Y %H:%M", tz = "Europe/Paris")
-
-
-apr$D.pre.iao <- difftime(apr$TS.iao, apr$TS.adm, units = "mins")
-apr$D.post.iao <- difftime(apr$TS.med, apr$TS.iao, units = "mins")
-apr$D.total <- difftime(apr$TS.med, apr$TS.adm, units = "mins")
-
-# APR2014 <- read.csv2('C:/Users/Augustin/Desktop/R/APR_2014_RT.csv', 
-#                      fileEncoding="CP1252",  sep = ',' )
-APR2014 <- read.csv2('APR_2014_RT.csv', 
-                     fileEncoding="CP1252",  sep = ',' )
-
-
-levels(APR2014$Tri.IAO)[1] <- 1
-levels(APR2014$Tri.IAO)[2] <- 2
-levels(APR2014$Tri.IAO)[3] <- 3
-levels(APR2014$Tri.IAO)[4] <- 3
-levels(APR2014$Tri.IAO)[4] <- 3
-
-
-
-
-A = matrix(c(mean(APR2014$différence..minutes.[APR2014$Tri.IAO == 1], na.rm=T), 
-             mean(APR2014$différence..minutes.[APR2014$Tri.IAO == 2], na.rm=T), 
-             mean(APR2014$différence..minutes.[APR2014$Tri.IAO == 3], na.rm=T),
-             mean(APR2014$différence..minutes.[APR2014$Tri.IAO == 4], na.rm=T), 
-             mean(APR2014$différence..minutes.[APR2014$Tri.IAO == 5], 
-            na.rm=T)), nrow=1, ncol=5,byrow = TRUE)
-colnames(A) = c('Absolue', 'Relative', 'Consultation', 'Consul 2', 'Consul 3')
-barplot(A, main="Temps d'attente total 2014",
-        xlab="Urgence")
-
-
-
-A = matrix(c(mean(apr$D.total[apr$tri.iao == 1], na.rm=T), 
-             mean(apr$D.total[apr$tri.iao == 2], na.rm=T), 
-             mean(apr$D.total[apr$tri.iao == 3], na.rm=T)), 
-           nrow=1, ncol=3,byrow = TRUE)
-colnames(A) = c('Absolue', 'Relative', 'Consultation')
-barplot(A, main="Temps d'attente total",
-        xlab="Urgence")
-
-A = matrix(c(mean(apr$D.pre.iao[apr$tri.iao == 1], na.rm=T), 
-             mean(apr$D.pre.iao[apr$tri.iao == 2], na.rm=T), 
-             mean(apr$D.pre.iao[apr$tri.iao == 3], na.rm=T)), 
-           nrow=1, ncol=3,byrow = TRUE)
-colnames(A) = c('Absolue', 'Relative', 'Consultation')
-barplot(A, main="Temps d'attente Pre IAO",
-        xlab="Urgence")
-
-A = matrix(c(mean(apr$D.post.iao[apr$tri.iao == 1], na.rm=T), 
-             mean(apr$D.post.iao[apr$tri.iao == 2], na.rm=T), 
-             mean(apr$D.post.iao[apr$tri.iao == 3], na.rm=T)), 
-           nrow=1, ncol=3,byrow = TRUE)
-colnames(A) = c('Absolue', 'Relative', 'Consultation')
-barplot(A, main="Temps d'attente Post IAO",
-        xlab="Urgence")
-
-A = table(apr$D.total)
-barplot(A, main="Temps d'attente",
-        xlab="Minutes")
-
-
-
-A = table(apr$D.total)
-barplot(A, main="Temps d'attente",
-        xlab="Minutes")
-
-
-apr$D.total <- gsub(",", "", apr$D.total)   # remove comma
-apr$D.total <- as.numeric(apr$D.total)  
-
-hist(rpois(100000,mean(apr$D.total, na.rm=T)), breaks = 200, freq=F)
-hist(apr$D.total[apr$D.total<100], breaks= 200, freq=F, add=T)
-box()
-
-hist(h1, col=rgb(1,0,0,0.5),xlim=c(0,10), ylim=c(0,200), 
-     main="Overlapping Histogram", xlab="Variable")
-hist(h2, col=rgb(0,0,1,0.5), add=T)
-box()
-
-
-head(APR2014)
-colnames(APR2014)[2] <- 'TS.adm'
-colnames(APR2014)[7] <- 'tri.iao'
-colnames(APR2014)[6] <- 'D.total'
-APR2014$TS.adm <- strptime(APR2014$TS.adm, format = "%m/%d/%Y %H:%M", 
-                           tz = "Europe/Paris")
-base_2014 <- APR2014[, c('TS.adm', 'tri.iao', 'D.total', '')]
-base_2013 <- apr[, c('TS.adm', 'tri.iao', 'D.total')]
-base_tot <- rbind(base_2013, base_2014)
-
-write.csv(base_tot, 'C:/Users/Augustin/Desktop/R/base_tot.csv')
-
-
-head(apr)
-apr[, c('TS.adm', 'D.total')]
-
-
 #----------------------------------------------------------------------------
 # Ajout nombre personne file attente
 
@@ -220,95 +100,6 @@ prob_jourmois = as.numeric(round(table(DT$jour_mois)/nrow(DT),3))
 prob_heure = as.numeric(round(table(DT$heure_adm)/nrow(DT),3))
 prob_minute = as.numeric(round(table(DT$min_adm)/nrow(DT), 3))
 
-simule_base_hopital = function(prob_joursemaine, prob_iao,
-                               prob_mois, prob_annee,
-                               prob_jourmois, prob_heure,
-                               prob_minute, moyenne_hopital,
-                               nb_hopital) {
-  
-}
-
-moyenne_hopital5 = 50
-nb_hopital5 = 30000
-jours = c("Dimanche", "Jeudi", "Lundi", "Mardi", "Mercredi", "Samedi", "Vendredi")
-hopital5 = data.table(tri.iao = sample(1:3, size=nb_hopital5, replace = T, 
-                                       prob = prob_iao),
-                      D.total = round(rexp(nb_hopital5, 1/moyenne_hopital5),0),
-                      jour_semaine = sample(jours, size = nb_hopital5, 
-                                            replace = T, prob = prob_joursemaine),
-                      mois = sample(1:12, size=nb_hopital5, replace = T,
-                                    prob = prob_mois),
-                      annee = sample(2013:2014, size=nb_hopital5, replace = T,
-                                     prob = prob_annee),
-                      jour_mois = sample(1:31, size=nb_hopital5, replace = T,
-                                         prob=prob_jourmois),
-                      heure_adm = sample(0:23, size=nb_hopital5, replace = T,
-                                         prob_heure),
-                      min_adm = sample(0:59, size=nb_hopital5, replace = T,
-                                       prob = prob_minute))
-
-hopital5 = as.data.frame(hopital5)
-for(j in c(4,6,7,8)) {
-  hopital5[,j] = as.character(hopital5[,j])
-  for(i in 1:nrow(hopital5)) {
-    if(nchar(hopital5[i,j])<2) hopital5[i,j] = paste0("0", hopital5[i,j]) 
-  }
-  print(j)
-}
-hopital5 = as.data.table(hopital5)
-
-hopital5[,adm := paste0(hopital5$annee, "-", hopital5$mois, "-", hopital5$jour_mois, " ",
-           hopital5$heure_adm, ":", hopital5$min_adm, ":00")]
-
-hopital5[,TS.adm := strptime(adm, format = "%Y-%m-%d %H:%M:%S", tz = "Europe/Paris")]
-hopital5[,TS.med := TS.adm + minutes(D.total)]
-hopital5 = na.omit(hopital5, cols = c("TS.adm", "TS.med"))
-hopital5 = hopital5[order(hopital5$TS.adm, decreasing = F)]
-hopital5[,adm:=NULL]
-
-
-attente = sapply(hopital5$TS.adm, function(x) 
-  compte_file_attente_par_iao(TS_adm = hopital5$TS.adm, 
-                                                 TS_med = hopital5$TS.med,
-                                                 evt = x, tri_iao = hopital5$tri.iao))
-
-attente_iao1 = apply(attente, 2, function(x) x$attente_iao1)
-attente_iao2 = apply(attente, 2, function(x) x$attente_iao2)
-attente_iao3 = apply(attente, 2, function(x) x$attente_iao3)
-attente_tot = apply(attente, 2, function(x) x$nb_attente)
-
-hopital5[,nb_pers_attente := attente_tot]
-hopital5[,attente_iao1 := attente_iao1]
-hopital5[,attente_iao2 := attente_iao2]
-hopital5[,attente_iao3 := attente_iao3]
-
-hopital5[,hopital := "hopital5"]
-
-moyenne = sapply(hopital5$TS.adm, function(x) 
-  moyenne_file_attente_par_iao(hopital5$TS.adm, hopital5$TS.med,  
-                                                x, 
-                                                hopital5$tri.iao, 4))
-
-moyenne_iao1 = apply(moyenne, 2, function(x) x$attente_iao1)
-moyenne_iao2 = apply(moyenne, 2, function(x) x$attente_iao2)
-moyenne_iao3 = apply(moyenne, 2, function(x) x$attente_iao3)
-moyenne_tot = apply(moyenne, 2, function(x) x$nb_attente)
-
-hopital5[,attente_moyenne := moyenne_tot]
-hopital5[,moyenne_iao1 := moyenne_iao1]
-hopital5[,moyenne_iao2 := moyenne_iao2]
-hopital5[,moyenne_iao3 := moyenne_iao3]
-
-for (col in c("moyenne_iao1", "moyenne_iao2", "moyenne_iao3", "attente_moyenne")) {
-  hopital5[is.na(get(col)), (col) := -999]
-}
-
-jour_fete = c(24, 25, 14, 31, 1)
-mois_fete = c(12, 12, 7, 12, 1)
-
-hopital5[,jour_fetes := trouve_jour_fete(jour_fete, mois_fete, 
-                                         mois = hopital5$mois, 
-                                         jour = hopital5$jour_mois)]
 
 
 fwrite(hopital5, file = "Bases/hopital5.csv",
@@ -435,29 +226,47 @@ hopital_tot = rbind(hopital1, hopital2, hopital3, hopital4, hopital5,
                     hop1_2017, hop2_2017, hop3_2017, hop4_2017, hop5_2017)
 
 library(rjson)
+library(dplyr)
+library(RJSONIO)
+library(jsonlite)
+
 json1 = "/Users/noemiehaouzi/Desktop/ENSAE_3A/S2/Projet info/kelhosto-master/app/src/main/assets/json/idf_emergency_hours.json"
 json2 = "/Users/noemiehaouzi/Desktop/ENSAE_3A/S2/Projet info/kelhosto-master/app/src/main/assets/json/idf_emergency.json"
 
-json_data = fromJSON(json1) %>% as.data.frame
-json_data2 = fromJSON(json2) %>% as.data.frame
+json_data = jsonlite::fromJSON(json1, flatten = T)
+json_data2 = jsonlite::fromJSON(json2, flatten=T)
 json_data = as.data.table(json_data)
 json_data2 = as.data.table(json_data2)
+
+names(json_data)
+names(json_data2)
+json_data2$etablissement
 
 noms_hopitaux_choisis = c("Hôpital Lariboisière",
                      "Hôpital de la Pitié Salpêtrière",
                      "Hôpital Necker",
                      "Hôpital Bichat - Claude Bernard",
-                     "Hôpital Ambroise Paré")
+                     "Hôpital Ambroise Paré",
+                     "Hôpital Hôtel-Dieu",
+                     "Hôpital Cochin",
+                     "Hôpital Saint-Joseph",
+                     "Hôpital Saint-Antoine",
+                     "Hôpital Européen - Georges Pompidou")
 hopitaux_choisis = json_data2[etablissement %in% noms_hopitaux_choisis, 
                               c("id", "etablissement"), with=F]
 setnames(hopitaux_choisis, "id", "id_hopital")
 hopitaux_choisis[,id_hopital := as.character(id_hopital)]
 
-hopital_tot[,hopital:=gsub(pattern = "hopital1", replacement = hopitaux_choisis$id[1], x = hopital)]
-hopital_tot[,hopital:=gsub(pattern = "hopital2", replacement = hopitaux_choisis$id[2], x = hopital)]
-hopital_tot[,hopital:=gsub(pattern = "hopital3", replacement = hopitaux_choisis$id[3], x = hopital)]
-hopital_tot[,hopital:=gsub(pattern = "hopital4", replacement = hopitaux_choisis$id[4], x = hopital)]
-hopital_tot[,hopital:=gsub(pattern = "hopital5", replacement = hopitaux_choisis$id[5], x = hopital)]
+hopital_tot[,hopital:=gsub(pattern = "hopital1", 
+                           replacement = hopitaux_choisis$id[1], x = hopital)]
+hopital_tot[,hopital:=gsub(pattern = "hopital2", 
+                           replacement = hopitaux_choisis$id[2], x = hopital)]
+hopital_tot[,hopital:=gsub(pattern = "hopital3", 
+                           replacement = hopitaux_choisis$id[3], x = hopital)]
+hopital_tot[,hopital:=gsub(pattern = "hopital4", 
+                           replacement = hopitaux_choisis$id[4], x = hopital)]
+hopital_tot[,hopital:=gsub(pattern = "hopital5", 
+                           replacement = hopitaux_choisis$id[5], x = hopital)]
 setnames(hopital_tot, "hopital", "id_hopital")
 
 hopital_tot = merge(hopital_tot, hopitaux_choisis, 
@@ -572,6 +381,7 @@ fwrite(hopital_tot, file = "Bases/base_5hopitaux.csv",
 ############# Stats Desc 
 library(data.table)
 tab = fread("Bases/base_5hopitaux.csv")
+
 tab2017 = tab[annee_adm == 2017]
 tab2013_2014 = tab[annee_adm == 2013 | annee_adm == 2014]
 
@@ -580,6 +390,18 @@ fwrite(tab2017, "Bases/tab2017.csv")
 
 tab2017[nchar(TS_adm)==22, TS_adm := substr(TS_adm, 1, 19)]
 tab2017[nchar(TS_med)==22, TS_med := substr(TS_med, 1, 19)]
+
+
+###########
+tab2013_2014 = fread("Bases/tab2013_2014.csv")
+tab2017 = fread("Bases/tab2017.csv")
+tmp = tab2013_2014[id_hopital!=750100042 & tri_iao==3]
+#tab2013_2014[,Attente_totale := as.numeric(Attente_totale)]
+#tab2013_2014[id_hopital!=750100042 & tri_iao == 3, 
+Attente_totale := Attente_totale + rexp(20,n = nrow(tmp))]
+
+#fwrite(tab2013_2014, "Bases/tab2013_2014_25041350.csv")
+#head(tab2013_2014$Attente_totale + rexp(20, n=nrow(tab2013_2014)))
 
 
 
